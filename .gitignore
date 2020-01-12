@@ -16,6 +16,21 @@ var/
 .installed.cfg
 *.egg
 venv
+node_modules
+*.vscode
+*.pyc
+*package*
+
+
+# python lib
+venv
+
+# data
+*data
+
+# jupyter notebook
+*.ipynb
 
 # Serverless directories
 .serverless
+serverless.config.*

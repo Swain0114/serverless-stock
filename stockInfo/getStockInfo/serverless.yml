@@ -1,0 +1,48 @@
+service: serverless-stock
+
+provider:
+    name: aws
+    runtime: python3.7
+    stage: dev
+
+custom:
+    pythonRequirements:
+        dockerizePip: non-linux
+    gatewayResponseParameters:
+        gatewayresponse.header.Access-Control-Allow-Origin: "'*'"
+        gatewayresponse.header.Access-Control-Allow-Headers: "'*'"
+    gatewayRestApiId:
+        Ref: "ApiGatewayRestApi"
+
+resources:
+    Resources:
+        GatewayResponseUnauthorized:
+            Type: "AWS::ApiGateway::GatewayResponse"
+            Properties:
+                ResponseParameters: ${self:custom.gatewayResponseParameters}
+                RestApiId: ${self:custom.gatewayRestApiId}
+                ResponseType: UNAUTHORIZED
+                ResponseTemplates:
+                    application/json: '{"error":{"code":"401","message":$context.error.messageString},"requestId":"$context.requestId"}'
+        GatewayResponseAccessDeied:
+            Type: "AWS::ApiGateway::GatewayResponse"
+            Properties:
+                ResponseParameters: ${self:custom.gatewayResponseParameters}
+                RestApiId: ${self:custom.gatewayRestApiId}
+                ResponseType: ACCESS_DENIED
+                ResponseTemplates:
+                    application/json: '{"error":{"code":"403","message":$context.error.messageString},"requestId":"$context.requestId"}'
+
+functions:
+    hello:
+
+    get_stock:
+        handler: handler.get_stock
+        events:
+            - http:
+                  path: getstock
+                  method: get
+
+plugins:
+    - serverless-offline-python
+    - serverless-python-requirements
