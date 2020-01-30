@@ -34,9 +34,9 @@ def put_object_to_s3(dateOfStr, jsonFile):
 
 def get_stock(event, context):
     date = datetime.date.today()
-    # dateOfStr = '{}{}{}'.format(date.year, date.month, date.day)
+    dateOfStr = '{}{}{}'.format(date.year, date.month, date.day)
 
-    dateOfStr = '20200102'
+    # dateOfStr = '20200102'
     response = requests.post(
         'http://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=' + dateOfStr + '&type=ALL')
 
