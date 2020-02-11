@@ -1,6 +1,6 @@
 import sys
 sys.path.append('../get_stock_info')
-from handler import put_object_to_s3
+from handler import put_object_to_s3, parse_stock_info
 import requests
 import datetime as dt
 import pytz
@@ -12,12 +12,30 @@ import time
 from stem import Signal
 from stem.control import Controller
 from fake_useragent import UserAgent
+# s3
+import boto3
 
 # agent instance
 ua = UserAgent()
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+def put_object_to_s3(date, json_file, file_status=''):
+    print(date)
+    client = boto3.client('s3')
+    date_format = '{}-{}-{}'.format(date.year, date.month, date.day)
+
+    response = client.put_object(
+        ACL='public-read',
+        Body=json_file,
+        Bucket='serverless-stocks',
+        Key='stockinfos/{}({})'.format(date_format, file_status)
+    )
+
+    print(response)
+
+    return response
 
 def get_current_ip():
     session = requests.session()
@@ -32,7 +50,6 @@ def get_current_ip():
     }
 
     try:
-        # r = session.get('http://httpbin.org/ip')
         r = requests.get('http://httpbin.org/ip', proxies=proxies)
     except Exception as e:
         print(str(e))
@@ -47,34 +64,36 @@ def renew_tor_ip():
 
 def get_stock_before(date):
     today = dt.datetime.today()
+    # proxies = {
+    #     'http': 'socks5h://localhost:9050',
+    #     'https': 'socks5h://localhost:9050'
+    # }
     request_count = 0
     while(date < today):
+        print(date)
         logger.info(date)
-        tw_tz = pytz.timezone('Asia/Taipei')
-        tw_date = tw_tz.localize(date)
-        if (request_count % 5 == 0):
-            print('Old IP address: {}'.format(get_current_ip()))
-            renew_tor_ip()
-            print('New IP address: ${}'.format(get_current_ip()))
-            randomAgent = ua.random
-            print('Agent {}'.format(randomAgent))
-            header = {
-                "User-Agent": randomAgent,
-                "X-Requested-With": "XMLHttpRequest"
-            }
-
-        date_of_str = tw_date.strftime('%Y%m%d')
-        stock_url = 'http://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date=' + date_of_str + '&type=ALL'
+        renew_tor_ip()
+        # fake agent
+        # randomAgent = ua.random
+        # header = {
+        #         "User-Agent": randomAgent,
+        #         "X-Requested-With": "XMLHttpRequest"
+        # }
+        date_of_str = date.strftime('%Y%m%d')
+        stock_url = 'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={}&type=ALL'.format(date_of_str)
+        print(stock_url)
+        print(get_current_ip())
         logger.info(stock_url)
 
+        # response = requests.post(stock_url, headers=header, proxies=proxies)
         response = requests.post(stock_url)
-
         try:
             df = parse_stock_info(response)
             json_file = df.to_json(orient='records', force_ascii=False)
-
-            result = put_object_to_s3(tw_date, json_file, 'success')
+            result = put_object_to_s3(date, json_file, 'success')
+            print('succeed')
         except:
+            print('passed')
             pass
         
         date = date + dt.timedelta(days=1)
