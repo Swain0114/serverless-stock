@@ -27,7 +27,7 @@ def parse_stock_info(response):
 
 
 def put_object_to_s3(date, json_file, file_status=''):
-    print(date)
+    logger.info(date)
     client = boto3.client('s3')
     date_format = '{}-{}-{}'.format(date.year, date.month, date.day)
 
@@ -37,8 +37,6 @@ def put_object_to_s3(date, json_file, file_status=''):
         Bucket='serverless-stocks',
         Key='stockinfos/{}({})'.format(date_format, file_status)
     )
-
-    print(response)
 
     return response
 
