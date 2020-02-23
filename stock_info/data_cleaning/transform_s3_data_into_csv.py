@@ -71,10 +71,12 @@ def get_bucket_keys_from_s3():
 
     files = []
     for obj in object_response['Contents']:
-        files.append({
-            "Key": obj['Key'],
-            "date": obj['Key'].split('/')[-1][:-9]
-        })
+        # eliminate the folder
+        if (len(obj['Key']) > 20):
+            files.append({
+                "Key": obj['Key'],
+                "date": obj['Key'].split('/')[-1][:-9]
+            })
 
     logger.info(files)
 
@@ -82,9 +84,10 @@ def get_bucket_keys_from_s3():
 
 def transform_data_into_df():
     files = get_bucket_keys_from_s3()
+    print(files[0])
 
     for date_info in files:
-        res = client.get_object(Bucket='serverless_stocks', Key=date_info['key'])
+        res = client.get_object(Bucket='serverless-stocks', Key=date_info['Key'])
         date_info['data'] = json.loads(res['Body'].read().decode('utf-8'))
     
     logger.info(files[0])
@@ -93,26 +96,26 @@ def transform_data_into_df():
     stock_info = []
     for file_info in files:
         for data in file_info['data']:
-        data['date'] = file_info['date']
-        data['成交筆數'] = data['成交筆數'].replace(',','')
-        data['成交股數'] = data['成交股數'].replace(',','')
-        data['成交金額'] = data['成交金額'].replace(',','')
-        data['開盤價'] = data['開盤價'].replace(',','')
-        data['最高價'] = data['最高價'].replace(',','')
-        data['最低價'] = data['最低價'].replace(',','')
-        data['收盤價'] = data['收盤價'].replace(',','')
-        data['最後揭示買價'] = data['最後揭示買價'].replace(',','')
-        if (data['最後揭示買量'] == None):
-            pass
-        else:
-            data['最後揭示買量'] = data['最後揭示買量'].replace(',','')
-        data['最後揭示賣價'] = data['最後揭示賣價'].replace(',','')
-        if (data['最後揭示賣量'] == None):
-            pass
-        else:
-            data['最後揭示賣量'] = data['最後揭示賣量'].replace(',','')
-        data['本益比'] = str(data['本益比']).replace(',','')
-        stock_info.append(data)
+            data['date'] = file_info['date']
+            data['成交筆數'] = data['成交筆數'].replace(',','')
+            data['成交股數'] = data['成交股數'].replace(',','')
+            data['成交金額'] = data['成交金額'].replace(',','')
+            data['開盤價'] = data['開盤價'].replace(',','')
+            data['最高價'] = data['最高價'].replace(',','')
+            data['最低價'] = data['最低價'].replace(',','')
+            data['收盤價'] = data['收盤價'].replace(',','')
+            data['最後揭示買價'] = data['最後揭示買價'].replace(',','')
+            if (data['最後揭示買量'] == None):
+                pass
+            else:
+                data['最後揭示買量'] = data['最後揭示買量'].replace(',','')
+            data['最後揭示賣價'] = data['最後揭示賣價'].replace(',','')
+            if (data['最後揭示賣量'] == None):
+                pass
+            else:
+                data['最後揭示賣量'] = data['最後揭示賣量'].replace(',','')
+            data['本益比'] = str(data['本益比']).replace(',','')
+            stock_info.append(data)
 
     date = dt.datetime.today()
     tw_tz = pytz.timezone('Asia/Taipei')
