@@ -6,7 +6,7 @@ provider:
     stage: dev
     region: us-east-1
     memorySize: 256
-    timeout: 30
+    timeout: 900
     versionFunctions: false
     iamRoleStatements:
         - Effect: Allow
