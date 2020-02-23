@@ -29,7 +29,7 @@ functions:
     #               path: getstock
     #               method: get
     get_stock:
-        handler: handler.get_stock
+        handler: scheduler.get_stock
         events:
             - schedule: cron(0 10 ? * MON-FRI *)
 
