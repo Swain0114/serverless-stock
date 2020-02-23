@@ -30,7 +30,7 @@ def put_object_to_s3(date, json_file, file_status=''):
         ACL='public-read',
         Body=json_file,
         Bucket='serverless-stocks',
-        Key='stockinfos/{}({})'.format(date_format, file_status)
+        Key='stockinfos/raw_data/{}({})'.format(date_format, file_status)
     )
 
     print(response)
