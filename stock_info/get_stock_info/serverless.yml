@@ -1,11 +1,11 @@
-service: serverless-stock
+service: get-stock-info
 
 provider:
     name: aws
     runtime: python3.7
     stage: dev
     region: us-east-1
-    memorySize: 256
+    memorySize: 128
     timeout: 30
     versionFunctions: false
     iamRoleStatements:
