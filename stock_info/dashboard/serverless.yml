@@ -21,12 +21,6 @@ custom:
     pythonRequirements:
         dockerizePip: non-linux
 
-functions:
-    get_stock:
-        handler: scheduler.get_stock
-        events:
-            - schedule: cron(0 10 ? * MON-FRI *)
-
 plugins:
     - serverless-offline-python
     - serverless-python-requirements
