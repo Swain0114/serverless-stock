@@ -1,0 +1,32 @@
+service: data-cleaning
+
+provider:
+    name: aws
+    runtime: python3.7
+    stage: dev
+    region: us-east-1
+    memorySize: 256
+    timeout: 900
+    versionFunctions: false
+    iamRoleStatements:
+        - Effect: Allow
+          Action:
+              - s3:PutObject
+              - s3:PutObjectAcl
+              - s3:GetObject
+              - s3:GetObjectAcl
+          Resource: arn:aws:s3:::serverless-stocks/*
+
+custom:
+    pythonRequirements:
+        dockerizePip: non-linux
+
+functions:
+    get_stock:
+        handler: transform_s3_data_into_csv.transform_data_into_df
+        events:
+            - schedule: rate(15 days)
+
+plugins:
+    - serverless-offline-python
+    - serverless-python-requirements
