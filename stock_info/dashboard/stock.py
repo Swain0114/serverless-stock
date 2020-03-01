@@ -14,6 +14,8 @@ from flask_caching import Cache
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.title = 'Stock Dashboard'
+server = app.server
 cache = Cache(app.server, config={
     'CACHE_TYPE': 'filesystem',
     'CACHE_DIR': 'cache-directory'
@@ -50,10 +52,9 @@ def query_data():
 
 
 def get_name_drop_down(df):
-
     options = []
 
-    for stock_name in df['stock_name']:
+    for stock_name in df['stock_name'].unique():
         dic = {
             'label': stock_name,
             'value': stock_name
@@ -79,10 +80,9 @@ def table_columns():
             'opening_price', 'closing_price', 'change', 'price_earning_ratio']
 
 
-def drop_down_names():
+def get_columns_drop_down():
     columns = ['stock_symbol', 'stock_name', 'trade_volume_shared', 'transaction', 'trade_value',
                'opening_price', 'closing_price', 'change', 'price_earning_ratio']
-    print(columns)
 
     options = []
     for e in columns:
@@ -99,58 +99,56 @@ df = query_data()
 print(df.columns)
 
 app.layout = html.Div(children=[
-    html.H1(children='Stock Dashboard'),
+    html.H1(children='Dashboard'),
     html.Div([
-        html.B(children='股票名稱',
-               style={
-                   'textAlign': 'center',
-                   'margin': '10px',
-                   'position': 'relative'
-               }),
-        # html.B(children='Y-axis',
-        #        style={
-        #            'textAlign': 'center',
-        #            'margin': '130px',
-        #            'position': 'relative'
-        #        })
-    ]),
-    html.Div([
-        dcc.Input(id='stock-name-text', value='台積電', type='text',
-                  style={
-                      'textAlign': 'center',
-                      'margin': '10px',
-                      'position': 'relative',
-                      'display': 'table-cell'
-                  }),
-    ]),
-    # dcc.Input(id='stock-name-text', value='台積電', type='text'),
-    # dcc.Dropdown(
-    #     id='column_names',
-    #     options=drop_down_names(),
-    #     value='closing_price',
-    #     searchable=False
-    # ),
-    # TODO: 下拉選單效能太差，再想辦法解決
-    # dcc.Dropdown(
-    #     id='stock-name-drop-down',
-    #     options=get_name_drop_down(df),
-    #     value='台泥',
-    #     searchable=False
-    # ),
+        html.P([
+            html.Label('股票名稱'),
+            html.Div([
+                dcc.Dropdown(
+                    id='stock-name-drop-down',
+                    options=get_name_drop_down(df),
+                    value='台泥',
+                    searchable=True,
+                    style={
+                        'text-align': 'center',
+                        'height': '38px'}
+                ),
+            ])
+        ],
+            style={'width': '200px',
+                   'text-align': 'center',
+                   'float': 'left'}
+        ),
+        html.P([
+            html.Label('Y-axis(left)'),
+            dcc.Dropdown(id='Y-axis(left)',
+                         options=get_columns_drop_down(),
+                         value='closing_price',
+                         style={
+                             'text-align': 'center',
+                             'height': '38px'}
+                         )],
+               style={'width': '200px',
+                      'text-align': 'center',
+                      'float': 'left'}
+               ),
+        html.P([
+            html.Label('Y-axis(right)'),
+            dcc.Dropdown(id='Y-axis(right)',
+                         options=get_columns_drop_down(),
+                         value='trade_volume_shared',
+                         style={
+                             'text-align': 'center',
+                             'height': '38px'}
+                         )],
+               style={'width': '200px',
+                      'text-align': 'center',
+                      'float': 'left'}
+               ),
+    ], style={'width': '50%', 'display': 'inline-block'}),
+
     dcc.Graph(
         id='stock-price',
-        figure={
-            'data': [
-                # dict(
-                #     x=df[df['stock_name'] == i]['date'],
-                #     y=df[df['stock_name'] == i]['closing_price'],
-                #     name=i
-                # ) for i in df['stock_name'].unique()[0]
-            ],
-            'layout': {
-                'title': '收盤價'
-            }
-        }
     ),
     html.Div(children='''
         起始日期
@@ -179,30 +177,33 @@ app.layout = html.Div(children=[
 
 @app.callback(
     Output('stock-price', 'figure'),
-    [Input('stock-name-text', 'value')]
-    # [Input('stock-name-drop-down', 'value')]
+    [Input('stock-name-drop-down', 'value'),
+     Input('Y-axis(left)', 'value'),
+     Input('Y-axis(right)', 'value')]
 )
-def update_stock_price(stock_name):
+def update_stock_price(stock_name, y_axis_left='closing_price', y_axis_right='trade_volume_shared'):
     dff = df[df['stock_name'] == stock_name]
 
     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
     fig.add_trace(go.Scatter(x=dff[dff['stock_name'] == stock_name]['date'],
-                             y=dff[dff['stock_name'] == stock_name]['closing_price'], name='Closing Price'), secondary_y=False)
+                             y=dff[dff['stock_name'] == stock_name][y_axis_left], name=y_axis_left), secondary_y=False)
 
     fig.add_trace(go.Scatter(x=dff[dff['stock_name'] == stock_name]['date'],
-                             y=dff[dff['stock_name'] == stock_name]['trade_volume_shared'], name='Trade Volume Shared'), secondary_y=True)
+                             y=dff[dff['stock_name'] == stock_name][y_axis_right], name=y_axis_right), secondary_y=True)
 
-    fig.update_layout(title_text=stock_name)
+    fig.update_layout(
+        title={
+            'text': stock_name,
+        })
+    fig.update_layout(template='seaborn')
     return fig
 
 
 @app.callback(
     Output('stock-table', 'data'),
-    [Input('stock-name-text', 'value'),
+    [Input('stock-name-drop-down', 'value'),
      Input('stock-date-drop-down', 'value')]
-    # [Input('stock-name-drop-down', 'value'),
-    #  Input('stock-date-drop-down', 'value')]
 )
 def update_stock_table(stock_name, stock_date):
     dff = df[df['stock_name'] == stock_name]
