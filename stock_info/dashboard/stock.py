@@ -3,6 +3,8 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 import json
 import pandas as pd
 from dash.dependencies import Input, Output
@@ -77,16 +79,57 @@ def table_columns():
             'opening_price', 'closing_price', 'change', 'price_earning_ratio']
 
 
+def drop_down_names():
+    columns = ['stock_symbol', 'stock_name', 'trade_volume_shared', 'transaction', 'trade_value',
+               'opening_price', 'closing_price', 'change', 'price_earning_ratio']
+    print(columns)
+
+    options = []
+    for e in columns:
+        dic = {
+            'label': e,
+            'value': e
+        }
+        options.append(dic)
+    return options
+
+
 df = query_data()
 
 print(df.columns)
 
 app.layout = html.Div(children=[
     html.H1(children='Stock Dashboard'),
-    html.Div(children='''
-        股票名稱
-    '''),
-    dcc.Input(id='stock-name-text', value='台積電', type='text'),
+    html.Div([
+        html.B(children='股票名稱',
+               style={
+                   'textAlign': 'center',
+                   'margin': '10px',
+                   'position': 'relative'
+               }),
+        # html.B(children='Y-axis',
+        #        style={
+        #            'textAlign': 'center',
+        #            'margin': '130px',
+        #            'position': 'relative'
+        #        })
+    ]),
+    html.Div([
+        dcc.Input(id='stock-name-text', value='台積電', type='text',
+                  style={
+                      'textAlign': 'center',
+                      'margin': '10px',
+                      'position': 'relative',
+                      'display': 'table-cell'
+                  }),
+    ]),
+    # dcc.Input(id='stock-name-text', value='台積電', type='text'),
+    # dcc.Dropdown(
+    #     id='column_names',
+    #     options=drop_down_names(),
+    #     value='closing_price',
+    #     searchable=False
+    # ),
     # TODO: 下拉選單效能太差，再想辦法解決
     # dcc.Dropdown(
     #     id='stock-name-drop-down',
@@ -142,18 +185,16 @@ app.layout = html.Div(children=[
 def update_stock_price(stock_name):
     dff = df[df['stock_name'] == stock_name]
 
-    return {
-        'data': [
-            dict(
-                x=dff[dff['stock_name'] == stock_name]['date'],
-                y=dff[dff['stock_name'] == stock_name]['closing_price'],
-                name=stock_name
-            )
-        ],
-        'layout': {
-            'title': '{} 收盤價'.format(stock_name)
-        }
-    }
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    fig.add_trace(go.Scatter(x=dff[dff['stock_name'] == stock_name]['date'],
+                             y=dff[dff['stock_name'] == stock_name]['closing_price'], name='Closing Price'), secondary_y=False)
+
+    fig.add_trace(go.Scatter(x=dff[dff['stock_name'] == stock_name]['date'],
+                             y=dff[dff['stock_name'] == stock_name]['trade_volume_shared'], name='Trade Volume Shared'), secondary_y=True)
+
+    fig.update_layout(title_text=stock_name)
+    return fig
 
 
 @app.callback(
