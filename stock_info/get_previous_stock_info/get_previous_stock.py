@@ -1,19 +1,16 @@
-import sys
-sys.path.append('../get_stock_info')
-from handler import put_object_to_s3, parse_stock_info
-import requests
-import datetime as dt
-import pytz
-import numpy as np
-import pandas as pd
-import logging
-# Tor
-import time
-from stem import Signal
-from stem.control import Controller
-from fake_useragent import UserAgent
-# s3
+# -*- coding: UTF-8 -*-
 import boto3
+from fake_useragent import UserAgent
+from stem.control import Controller
+from stem import Signal
+import time
+import logging
+import pandas as pd
+import numpy as np
+import pytz
+import datetime as dt
+import requests
+from io import StringIO
 
 # agent instance
 ua = UserAgent()
@@ -21,8 +18,21 @@ ua = UserAgent()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
+def parse_stock_info(response):
+    f = StringIO(response.text)
+    str_list = []
+
+    for i in response.text.split('\n'):
+        if (len(i.split('",')) == 17 and i[0] != '='):
+            i = i.strip(",\r\n")
+            str_list.append(i)
+
+    return pd.read_csv(StringIO("\n".join(str_list)))
+
+
 def put_object_to_s3(date, json_file, file_status=''):
-    print(date)
+    logger.info(date)
     client = boto3.client('s3')
     date_format = '{}-{}-{}'.format(date.year, date.month, date.day)
 
@@ -33,9 +43,8 @@ def put_object_to_s3(date, json_file, file_status=''):
         Key='stockinfos/raw_data/{}({})'.format(date_format, file_status)
     )
 
-    print(response)
-
     return response
+
 
 def get_current_ip():
     session = requests.session()
@@ -56,19 +65,16 @@ def get_current_ip():
     else:
         return r.text
 
+
 def renew_tor_ip():
     with Controller.from_port(port=9051) as controller:
         controller.authenticate(
             password='Swain')
         controller.signal(Signal.NEWNYM)
 
+
 def get_stock_before(date):
     today = dt.datetime.today()
-    # proxies = {
-    #     'http': 'socks5h://localhost:9050',
-    #     'https': 'socks5h://localhost:9050'
-    # }
-    request_count = 0
     while(date < today):
         print(date)
         logger.info(date)
@@ -80,7 +86,8 @@ def get_stock_before(date):
         #         "X-Requested-With": "XMLHttpRequest"
         # }
         date_of_str = date.strftime('%Y%m%d')
-        stock_url = 'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={}&type=ALL'.format(date_of_str)
+        stock_url = 'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=csv&date={}&type=ALL'.format(
+            date_of_str)
         print(stock_url)
         print(get_current_ip())
         logger.info(stock_url)
@@ -95,5 +102,5 @@ def get_stock_before(date):
         except:
             print('passed')
             pass
-        
+
         date = date + dt.timedelta(days=1)
