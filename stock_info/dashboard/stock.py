@@ -22,7 +22,7 @@ TIMEOUT = 60
 
 @cache.memoize(timeout=TIMEOUT)
 def query_data():
-    df = pd.read_csv('../../data/cleaned-data(20200223).csv')
+    df = pd.read_csv('../../data/cleaned-data(20200301).csv')
     df['trade_volume_shared'] = ['{:,}'.format(
         i) for i in df['trade_volume_shared']]
 
