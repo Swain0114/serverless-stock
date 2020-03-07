@@ -15,6 +15,7 @@ provider:
               - s3:PutObjectAcl
               - s3:GetObject
               - s3:GetObjectAcl
+              - s3:ListBucket
           Resource: arn:aws:s3:::serverless-stocks/*
 
 custom:
