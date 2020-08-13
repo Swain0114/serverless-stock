@@ -27,6 +27,10 @@ functions:
         handler: transform_s3_data_into_csv.transform_data_into_df
         events:
             - schedule: rate(15 days)
+            # Test
+            # - http:
+            #       path: cleaning/transformdata
+            #       method: get
 
 plugins:
     - serverless-offline-python
